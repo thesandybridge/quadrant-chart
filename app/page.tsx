@@ -69,23 +69,51 @@ export default function QuadrantGraphPage() {
     return lines;
   }, []);
 
-  // Function to update point from API data
+  // Function to update point from API data with corrected quadrant mapping
   const updatePointFromApi = useCallback((data: ApiResponse) => {
-    const x = (data.property1 + data.property2) / 2;
-    const y = (data.property3 + data.property4) / 2;
-
     // Store the original properties
     setProperties(data);
 
-    // Update the point position
-    setPoint({ x, y });
+    // Normalize all properties to 0-1 range (assuming 0-100 input range)
+    const p1 = data.property1 / 100;
+    const p2 = data.property2 / 100;
+    const p3 = data.property3 / 100;
+    const p4 = data.property4 / 100;
 
-    // Log the properties
-    console.log('Point moved. Original properties:', {
+    // Calculate x and y coordinates based on properties
+    // Quadrant mapping:
+    // - Property1 pulls toward Quadrant 1 (top right)
+    // - Property2 pulls toward Quadrant 2 (top left)
+    // - Property3 pulls toward Quadrant 3 (bottom left)
+    // - Property4 pulls toward Quadrant 4 (bottom right)
+
+    // X-coordinate: influenced by horizontal pull (Q1+Q4 vs Q2+Q3)
+    // Higher values of P1 and P4 pull right, higher values of P2 and P3 pull left
+    const xInfluence = (p1 + p4) - (p2 + p3);
+    // Scale from -2...2 to 0...100
+    const x = 50 + (xInfluence * 25);
+
+    // Y-coordinate: influenced by vertical pull (Q1+Q2 vs Q3+Q4)
+    // Higher values of P1 and P2 pull up, higher values of P3 and P4 pull down
+    const yInfluence = (p1 + p2) - (p3 + p4);
+    // Scale from -2...2 to 0...100
+    const y = 50 + (yInfluence * 25);
+
+    // Ensure values stay within 0-100 range
+    const clampedX = Math.max(0, Math.min(100, x));
+    const clampedY = Math.max(0, Math.min(100, y));
+
+    // Update the point position
+    setPoint({ x: clampedX, y: clampedY });
+
+    // Log the properties and calculated position
+    console.log('Point moved. Properties and position:', {
       property1: data.property1.toFixed(2),
       property2: data.property2.toFixed(2),
       property3: data.property3.toFixed(2),
-      property4: data.property4.toFixed(2)
+      property4: data.property4.toFixed(2),
+      calculatedX: clampedX.toFixed(2),
+      calculatedY: clampedY.toFixed(2)
     });
   }, []);
 
@@ -134,6 +162,14 @@ export default function QuadrantGraphPage() {
       });
     }
   }, [point, point.x, point.y]);
+
+  // Helper function to determine which quadrant the point is in
+  const getQuadrant = (x: number, y: number): number => {
+    if (x >= 50 && y >= 50) return 1; // Top right
+    if (x < 50 && y >= 50) return 2;  // Top left
+    if (x < 50 && y < 50) return 3;   // Bottom left
+    return 4;                         // Bottom right
+  };
 
   // Render the component
   return (
@@ -205,26 +241,26 @@ export default function QuadrantGraphPage() {
 
       <div className={styles.info}>
         <h2>Current Position</h2>
-        <p>X: {point.x.toFixed(2)}</p>
-        <p>Y: {point.y.toFixed(2)}</p>
+        <p>X: {point.x.toFixed(2)}, Y: {point.y.toFixed(2)}</p>
+        <p>Quadrant: {getQuadrant(point.x, point.y)}</p>
 
         {/* Display original properties */}
         <h3>Original Properties</h3>
         <div className={styles.propertiesGrid}>
-          <div className={styles.property}>
-            <span>Property 1:</span>
+          <div className={`${styles.property} ${styles.q1Property}`}>
+            <span>Property 1 (Q1):</span>
             <span>{properties.property1.toFixed(2)}</span>
           </div>
-          <div className={styles.property}>
-            <span>Property 2:</span>
+          <div className={`${styles.property} ${styles.q2Property}`}>
+            <span>Property 2 (Q2):</span>
             <span>{properties.property2.toFixed(2)}</span>
           </div>
-          <div className={styles.property}>
-            <span>Property 3:</span>
+          <div className={`${styles.property} ${styles.q3Property}`}>
+            <span>Property 3 (Q3):</span>
             <span>{properties.property3.toFixed(2)}</span>
           </div>
-          <div className={styles.property}>
-            <span>Property 4:</span>
+          <div className={`${styles.property} ${styles.q4Property}`}>
+            <span>Property 4 (Q4):</span>
             <span>{properties.property4.toFixed(2)}</span>
           </div>
         </div>
@@ -232,4 +268,3 @@ export default function QuadrantGraphPage() {
     </div>
   );
 }
-
