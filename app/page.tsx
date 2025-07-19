@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import styles from './page.module.css';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import styles from './QuadrantGraph.module.css';
 
 interface ApiResponse {
   property1: number;
@@ -16,18 +16,36 @@ interface Point {
 }
 
 interface HistoryPoint extends Point {
-  id: number;
+  id: string;
 }
 
 export default function QuadrantGraphPage() {
   const [point, setPoint] = useState<Point>({ x: 50, y: 50 });
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [properties, setProperties] = useState<ApiResponse>({
-    property1: 0,
-    property2: 0,
-    property3: 0,
-    property4: 0
+    property1: 50,
+    property2: 50,
+    property3: 50,
+    property4: 50
   });
+  const [isAutoMode, setIsAutoMode] = useState(true);
+  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handlePropertyChange = (property: keyof ApiResponse, value: string) => {
+    const numValue = parseFloat(value);
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+      // Round to 2 decimal places
+      const roundedValue = Math.round(numValue * 100) / 100;
+      setProperties(prev => ({
+        ...prev,
+        [property]: roundedValue
+      }));
+    }
+  };
+
+  const handleManualUpdate = () => {
+    updatePointFromApi(properties);
+  };
 
   // Generate grid lines - memoized to prevent recreation on every render
   const renderGridLines = useCallback(() => {
@@ -81,30 +99,37 @@ export default function QuadrantGraphPage() {
     const p4 = data.property4 / 100;
 
     // Calculate x and y coordinates based on properties
-    // Quadrant mapping:
-    // - Property1 pulls toward Quadrant 1 (top right)
-    // - Property2 pulls toward Quadrant 2 (top left)
-    // - Property3 pulls toward Quadrant 3 (bottom left)
-    // - Property4 pulls toward Quadrant 4 (bottom right)
+    // For x-coordinate:
+    // - Higher P1 and P4 pull right (toward x=100)
+    // - Higher P2 and P3 pull left (toward x=0)
+    // For y-coordinate:
+    // - Higher P1 and P2 pull up (toward y=100)
+    // - Higher P3 and P4 pull down (toward y=0)
 
-    // X-coordinate: influenced by horizontal pull (Q1+Q4 vs Q2+Q3)
-    // Higher values of P1 and P4 pull right, higher values of P2 and P3 pull left
-    const xInfluence = (p1 + p4) - (p2 + p3);
-    // Scale from -2...2 to 0...100
-    const x = 50 + (xInfluence * 25);
+    // Calculate the relative strength of each direction
+    const rightPull = p1 + p4;
+    const leftPull = p2 + p3;
+    const upPull = p1 + p2;
+    const downPull = p3 + p4;
 
-    // Y-coordinate: influenced by vertical pull (Q1+Q2 vs Q3+Q4)
-    // Higher values of P1 and P2 pull up, higher values of P3 and P4 pull down
-    const yInfluence = (p1 + p2) - (p3 + p4);
-    // Scale from -2...2 to 0...100
-    const y = 50 + (yInfluence * 25);
+    // Calculate total horizontal and vertical influence
+    const totalHorizontal = rightPull + leftPull;
+    const totalVertical = upPull + downPull;
 
-    // Ensure values stay within 0-100 range
-    const clampedX = Math.max(0, Math.min(100, x));
-    const clampedY = Math.max(0, Math.min(100, y));
+    // Calculate normalized position (0-100 range)
+    // If all properties are equal, point should be at center (50,50)
+    let x = 50;
+    if (totalHorizontal > 0) {
+      x = (rightPull / totalHorizontal) * 100;
+    }
+
+    let y = 50;
+    if (totalVertical > 0) {
+      y = (upPull / totalVertical) * 100;
+    }
 
     // Update the point position
-    setPoint({ x: clampedX, y: clampedY });
+    setPoint({ x, y });
 
     // Log the properties and calculated position
     console.log('Point moved. Properties and position:', {
@@ -112,56 +137,99 @@ export default function QuadrantGraphPage() {
       property2: data.property2.toFixed(2),
       property3: data.property3.toFixed(2),
       property4: data.property4.toFixed(2),
-      calculatedX: clampedX.toFixed(2),
-      calculatedY: clampedY.toFixed(2)
+      calculatedX: x.toFixed(2),
+      calculatedY: y.toFixed(2)
     });
   }, []);
 
-  // Effect for initial data fetch and interval setup
+  // Toggle between auto and manual modes
+  const toggleMode = () => {
+    const newMode = !isAutoMode;
+    setIsAutoMode(newMode);
+
+    // Clear existing interval if switching to manual mode
+    if (!newMode && intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+      intervalIdRef.current = null;
+    }
+  };
+
+  // Update history when point changes
   useEffect(() => {
-    // Simulate initial API response
-    const initialData: ApiResponse = {
-      property1: 90,
-      property2: 45,
-      property3: 60,
-      property4: 30,
-    };
+    // Skip initial render or when point hasn't changed
+    if (point.x === 50 && point.y === 50 && history.length === 0) {
+      return;
+    }
 
-    updatePointFromApi(initialData);
+    // Only add to history if we have a valid point
+    if (point.x >= 0 && point.y >= 0) {
+      // Check if this point is significantly different from the last one
+      const lastPoint = history.length > 0 ? history[history.length - 1] : null;
+      const isSignificantChange = !lastPoint ||
+        Math.abs(lastPoint.x - point.x) > 1 ||
+        Math.abs(lastPoint.y - point.y) > 1;
 
-    // Simulate new data coming in every 3 seconds
-    const interval = setInterval(() => {
-      // Generate random values for demonstration
-      const newData: ApiResponse = {
+      if (isSignificantChange) {
+        // Use crypto.randomUUID() for a guaranteed unique ID
+        const newPoint = {
+          ...point,
+          id: crypto.randomUUID()
+        };
+
+        // Update history
+        setHistory(prev => {
+          const newHistory = [...prev, newPoint];
+          // Keep only the last 5 points
+          if (newHistory.length > 5) {
+            return newHistory.slice(-5);
+          }
+          return newHistory;
+        });
+      }
+    }
+  }, [point.x, point.y]); // Remove history from dependencies
+
+  // Effect for handling auto mode
+  useEffect(() => {
+    // Clean up any existing interval first
+    if (intervalIdRef.current) {
+      clearInterval(intervalIdRef.current);
+      intervalIdRef.current = null;
+    }
+
+    // Only set up interval if in auto mode
+    if (isAutoMode) {
+      // Generate initial random data
+      const initialData: ApiResponse = {
         property1: Math.random() * 100,
         property2: Math.random() * 100,
         property3: Math.random() * 100,
         property4: Math.random() * 100,
       };
 
-      updatePointFromApi(newData);
-    }, 3000);
+      updatePointFromApi(initialData);
 
-    return () => clearInterval(interval);
-  }, [updatePointFromApi]);
+      // Set up new interval with a longer delay
+      intervalIdRef.current = setInterval(() => {
+        const newData: ApiResponse = {
+          property1: Math.random() * 100,
+          property2: Math.random() * 100,
+          property3: Math.random() * 100,
+          property4: Math.random() * 100,
+        };
 
-  // Separate effect to update history when point changes
-  useEffect(() => {
-    // Only add to history if we have a valid point
-    if (point.x >= 0 && point.y >= 0) {
-      setHistory(prev => {
-        // Create new history array with current point
-        const newPoint = { ...point, id: Date.now() };
-        const newHistory = [...prev, newPoint];
-
-        // Keep only the last 5 points
-        if (newHistory.length > 5) {
-          return newHistory.slice(-5);
-        }
-        return newHistory;
-      });
+        updatePointFromApi(newData);
+      }, 5000); // 5 seconds interval
     }
-  }, [point, point.x, point.y]);
+
+    // Cleanup function
+    return () => {
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
+        intervalIdRef.current = null;
+      }
+    };
+  }, [isAutoMode, updatePointFromApi]);
 
   // Helper function to determine which quadrant the point is in
   const getQuadrant = (x: number, y: number): number => {
@@ -175,6 +243,20 @@ export default function QuadrantGraphPage() {
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Quadrant Graph</h1>
+
+      {/* Mode toggle switch */}
+      <div className={styles.modeToggle}>
+        <span className={!isAutoMode ? styles.activeMode : ''}>Manual</span>
+        <label className={styles.switch}>
+          <input
+            type="checkbox"
+            checked={isAutoMode}
+            onChange={toggleMode}
+          />
+          <span className={styles.slider}></span>
+        </label>
+        <span className={isAutoMode ? styles.activeMode : ''}>Auto</span>
+      </div>
 
       <div className={styles.graphContainer}>
         <svg
@@ -244,8 +326,71 @@ export default function QuadrantGraphPage() {
         <p>X: {point.x.toFixed(2)}, Y: {point.y.toFixed(2)}</p>
         <p>Quadrant: {getQuadrant(point.x, point.y)}</p>
 
+        {/* Manual input controls */}
+        {!isAutoMode && (
+          <div className={styles.manualControls}>
+            <h3>Manual Property Controls</h3>
+            <div className={styles.inputGrid}>
+              <div className={`${styles.inputGroup} ${styles.q1Input}`}>
+                <label htmlFor="property1">Property 1 (Q1):</label>
+                <input
+                  id="property1"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={properties.property1.toFixed(2)}
+                  onChange={(e) => handlePropertyChange('property1', e.target.value)}
+                />
+              </div>
+              <div className={`${styles.inputGroup} ${styles.q2Input}`}>
+                <label htmlFor="property2">Property 2 (Q2):</label>
+                <input
+                  id="property2"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={properties.property2.toFixed(2)}
+                  onChange={(e) => handlePropertyChange('property2', e.target.value)}
+                />
+              </div>
+              <div className={`${styles.inputGroup} ${styles.q3Input}`}>
+                <label htmlFor="property3">Property 3 (Q3):</label>
+                <input
+                  id="property3"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={properties.property3.toFixed(2)}
+                  onChange={(e) => handlePropertyChange('property3', e.target.value)}
+                />
+              </div>
+              <div className={`${styles.inputGroup} ${styles.q4Input}`}>
+                <label htmlFor="property4">Property 4 (Q4):</label>
+                <input
+                  id="property4"
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={properties.property4.toFixed(2)}
+                  onChange={(e) => handlePropertyChange('property4', e.target.value)}
+                />
+              </div>
+            </div>
+            <button
+              className={styles.updateButton}
+              onClick={handleManualUpdate}
+            >
+              Update Position
+            </button>
+          </div>
+        )}
+
         {/* Display original properties */}
-        <h3>Original Properties</h3>
+        <h3>Current Properties</h3>
         <div className={styles.propertiesGrid}>
           <div className={`${styles.property} ${styles.q1Property}`}>
             <span>Property 1 (Q1):</span>
@@ -268,3 +413,4 @@ export default function QuadrantGraphPage() {
     </div>
   );
 }
+
