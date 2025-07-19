@@ -187,7 +187,7 @@ export default function QuadrantGraphPage() {
         });
       }
     }
-  }, [point.x, point.y]); // Remove history from dependencies
+  }, [history, point, point.x, point.y]); // Remove history from dependencies
 
   // Effect for handling auto mode
   useEffect(() => {
