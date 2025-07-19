@@ -88,6 +88,7 @@ export default function QuadrantGraphPage() {
   }, []);
 
   // Function to update point from API data with corrected quadrant mapping
+  // Function to update point from API data with improved quadrant mapping
   const updatePointFromApi = useCallback((data: ApiResponse) => {
     // Store the original properties
     setProperties(data);
@@ -98,35 +99,22 @@ export default function QuadrantGraphPage() {
     const p3 = data.property3 / 100;
     const p4 = data.property4 / 100;
 
-    // Calculate x and y coordinates based on properties
-    // For x-coordinate:
-    // - Higher P1 and P4 pull right (toward x=100)
-    // - Higher P2 and P3 pull left (toward x=0)
-    // For y-coordinate:
-    // - Higher P1 and P2 pull up (toward y=100)
-    // - Higher P3 and P4 pull down (toward y=0)
+    // Calculate x and y coordinates based on weighted influence of each property
+    // Each property pulls toward its respective corner
 
-    // Calculate the relative strength of each direction
-    const rightPull = p1 + p4;
-    const leftPull = p2 + p3;
-    const upPull = p1 + p2;
-    const downPull = p3 + p4;
+    // Calculate weighted average for x-coordinate
+    // p1 and p4 pull right (toward x=100), p2 and p3 pull left (toward x=0)
+    const xNumerator = (p1 * 100) + (p2 * 0) + (p3 * 0) + (p4 * 100);
+    const xDenominator = p1 + p2 + p3 + p4;
 
-    // Calculate total horizontal and vertical influence
-    const totalHorizontal = rightPull + leftPull;
-    const totalVertical = upPull + downPull;
+    // Calculate weighted average for y-coordinate
+    // p1 and p2 pull up (toward y=100), p3 and p4 pull down (toward y=0)
+    const yNumerator = (p1 * 100) + (p2 * 100) + (p3 * 0) + (p4 * 0);
+    const yDenominator = p1 + p2 + p3 + p4;
 
-    // Calculate normalized position (0-100 range)
-    // If all properties are equal, point should be at center (50,50)
-    let x = 50;
-    if (totalHorizontal > 0) {
-      x = (rightPull / totalHorizontal) * 100;
-    }
-
-    let y = 50;
-    if (totalVertical > 0) {
-      y = (upPull / totalVertical) * 100;
-    }
+    // Calculate final position, defaulting to center if all properties are 0
+    const x = xDenominator > 0 ? xNumerator / xDenominator : 50;
+    const y = yDenominator > 0 ? yNumerator / yDenominator : 50;
 
     // Update the point position
     setPoint({ x, y });
