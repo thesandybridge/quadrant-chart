@@ -1,0 +1,241 @@
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.title {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+/* Mode toggle switch - same as your other charts */
+.modeToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 0.5rem;
+}
+
+.modeToggle span {
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.activeMode {
+  font-weight: bold;
+  color: #333 !important;
+}
+
+/* Toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 30px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 22px;
+  width: 22px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(30px);
+}
+
+.graphContainer {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.graph {
+  width: 100%;
+  height: 100%;
+  background-color: #f9f9f9;
+}
+
+/* Radar chart specific styles */
+.levelCircle {
+  fill: none;
+  stroke: rgba(0, 0, 0, 0.1);
+  stroke-width: 0.5;
+}
+
+.axisLine {
+  stroke: rgba(0, 0, 0, 0.2);
+  stroke-width: 0.5;
+}
+
+.radarArea {
+  transition: d 0.8s ease-in-out;
+}
+
+.radarStroke {
+  stroke-width: 2;
+  transition: d 0.8s ease-in-out;
+}
+
+.dataPoint {
+  stroke: white;
+  stroke-width: 1;
+  transition: cx 0.8s ease-in-out, cy 0.8s ease-in-out;
+  filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.5));
+  cursor: pointer;
+}
+
+.axisLabel {
+  font-size: 12px;
+  fill: #333;
+  font-weight: 500;
+}
+
+.levelLabel {
+  font-size: 8px;
+  fill: #666;
+  opacity: 0.7;
+}
+
+.tooltipBg {
+  fill: rgba(0, 0, 0, 0.7);
+  rx: 4;
+  ry: 4;
+}
+
+.tooltipText {
+  fill: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Info panel */
+.info {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.info h2 {
+  margin-top: 0;
+  font-size: 1.2rem;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+.info h3 {
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.info p {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+/* Properties grid */
+.propertiesGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.property {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.property span:first-child {
+  font-weight: 500;
+  color: #555;
+}
+
+.property span:last-child {
+  font-family: monospace;
+  font-weight: bold;
+  color: rgb(53, 162, 235);
+}
+
+/* Manual controls */
+.manualControls {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.updateButton {
+  display: block;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.updateButton:hover {
+  background-color: #0d8bf2;
+}
+
+.updateButton:active {
+  background-color: #0b7ad1;
+}
+

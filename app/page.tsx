@@ -10,6 +10,9 @@ export default function Page() {
       <Link href={'/charts/area'}>
         Area Chart
       </Link>
+      <Link href={'/charts/radar'}>
+        Radar Chart
+      </Link>
     </div>
   )
 }
