@@ -22,6 +22,12 @@ interface HistoryPoint extends Point {
 export default function QuadrantGraphPage() {
   const [point, setPoint] = useState<Point>({ x: 50, y: 50 });
   const [history, setHistory] = useState<HistoryPoint[]>([]);
+  const [properties, setProperties] = useState<ApiResponse>({
+    property1: 0,
+    property2: 0,
+    property3: 0,
+    property4: 0
+  });
 
   // Generate grid lines - memoized to prevent recreation on every render
   const renderGridLines = useCallback(() => {
@@ -67,7 +73,20 @@ export default function QuadrantGraphPage() {
   const updatePointFromApi = useCallback((data: ApiResponse) => {
     const x = (data.property1 + data.property2) / 2;
     const y = (data.property3 + data.property4) / 2;
+
+    // Store the original properties
+    setProperties(data);
+
+    // Update the point position
     setPoint({ x, y });
+
+    // Log the properties
+    console.log('Point moved. Original properties:', {
+      property1: data.property1.toFixed(2),
+      property2: data.property2.toFixed(2),
+      property3: data.property3.toFixed(2),
+      property4: data.property4.toFixed(2)
+    });
   }, []);
 
   // Effect for initial data fetch and interval setup
@@ -114,7 +133,7 @@ export default function QuadrantGraphPage() {
         return newHistory;
       });
     }
-  }, [point.x, point.y]);
+  }, [point, point.x, point.y]);
 
   // Render the component
   return (
@@ -188,6 +207,27 @@ export default function QuadrantGraphPage() {
         <h2>Current Position</h2>
         <p>X: {point.x.toFixed(2)}</p>
         <p>Y: {point.y.toFixed(2)}</p>
+
+        {/* Display original properties */}
+        <h3>Original Properties</h3>
+        <div className={styles.propertiesGrid}>
+          <div className={styles.property}>
+            <span>Property 1:</span>
+            <span>{properties.property1.toFixed(2)}</span>
+          </div>
+          <div className={styles.property}>
+            <span>Property 2:</span>
+            <span>{properties.property2.toFixed(2)}</span>
+          </div>
+          <div className={styles.property}>
+            <span>Property 3:</span>
+            <span>{properties.property3.toFixed(2)}</span>
+          </div>
+          <div className={styles.property}>
+            <span>Property 4:</span>
+            <span>{properties.property4.toFixed(2)}</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -95,16 +95,24 @@
 /* Info panel */
 .info {
   margin-top: 2rem;
-  padding: 1rem;
+  padding: 1.5rem;
   background-color: #f5f5f5;
   border-radius: 8px;
-  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .info h2 {
   margin-top: 0;
   font-size: 1.2rem;
   color: #333;
+  margin-bottom: 1rem;
+}
+
+.info h3 {
+  margin-top: 1.5rem;
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 0.5rem;
 }
 
 .info p {
@@ -112,3 +120,32 @@
   font-size: 1rem;
   color: #666;
 }
+
+/* Properties grid */
+.propertiesGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.property {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.property span:first-child {
+  font-weight: 500;
+  color: #555;
+}
+
+.property span:last-child {
+  font-family: monospace;
+  color: #e63946;
+  font-weight: bold;
+}
+
