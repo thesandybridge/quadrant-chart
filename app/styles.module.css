@@ -1,0 +1,15 @@
+.container {
+  display: flex;
+  padding: 1rem;
+  justify-content: center;
+  gap: .5rem;
+
+  a {
+    padding: .5rem;
+    background: #435e3b;
+    color: #78FD66;
+    &:hover {
+      opacity: 0.4;
+    }
+  }
+}
